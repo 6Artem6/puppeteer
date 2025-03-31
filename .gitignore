@@ -1,0 +1,8 @@
+node_modules
+browser/node_modules
+client/node_modules
+profile
+.git
+.env
+package-lock.json
+cookies.txt

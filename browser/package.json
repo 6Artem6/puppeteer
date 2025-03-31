@@ -1,0 +1,19 @@
+{
+  "name": "browser-service",
+  "version": "1.0.0",
+  "main": "browser.mjs",
+  "type": "module",
+  "scripts": {
+    "start": "node browser.mjs"
+  },
+  "dependencies": {
+    "cookie-parser": "^1.4.7",
+    "crypto": "^1.0.1",
+    "dotenv": "^16.4.7",
+    "express": "^4.18.2",
+    "node-fetch": "^3.3.2",
+    "puppeteer": "^22.0.0",
+    "puppeteer-core": "^24.4.0",
+    "wscat": "^6.0.1"
+  }
+}
