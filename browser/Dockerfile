@@ -22,12 +22,13 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 RUN npm install -g wscat
 
-COPY . .
+COPY ./browser ./browser
+COPY ./shared ./shared
 
 # Даем права на выполнение entrypoint.sh
-RUN chmod +x /app/entrypoint.sh
+RUN chmod +x browser/entrypoint.sh
 
 EXPOSE 3000
 EXPOSE 9222
 
-CMD ["/app/entrypoint.sh"]
+CMD ["./browser/entrypoint.sh"]

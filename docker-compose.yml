@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   traefik:
     image: traefik:v2.10
@@ -25,6 +23,11 @@ services:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
     networks:
       - proxy
+    depends_on:
+      - redis
+      - browser-service
+      - puppeteer-client
+      - worker
     deploy:
       placement:
         constraints:
@@ -46,27 +49,34 @@ services:
     image: browser-service:latest
     restart: always
     build:
-      context: ./browser
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./browser/Dockerfile
     environment:
       - EXPRESS_PORT=3000
       - DEBUG_PORT=9222
       - PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
-    env_file:
-      - .env
     networks:
       - proxy
+    depends_on:
+      - redis
+    env_file:
+      - .env
     volumes:
       - ./browser/supervisord.conf:/etc/supervisor/conf.d/supervisord.conf
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"] # Измени путь под свой сервис
+      interval: 10s
+      retries: 5
+      timeout: 5s
     deploy:
       mode: replicated
-      replicas: 2
+      replicas: 4
       resources:
         limits:
-          cpus: "1.5"
-          memory: "3G"
-        reservations:
+          cpus: "1.0"
           memory: "1G"
+        reservations:
+          memory: "500M"
       placement:
         constraints:
           - node.role == manager
@@ -98,22 +108,25 @@ services:
 
   puppeteer-client:
     image: puppeteer-client:latest
+    restart: always
     build:
-      context: ./client
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./client/Dockerfile
     environment:
       - PORT=4000
     env_file:
       - .env
     networks:
       - proxy
+    depends_on:
+      - redis
     deploy:
       mode: replicated
-      replicas: 10
+      replicas: 2
       resources:
         limits:
-          cpus: "0.2"
-          memory: "100M"
+          cpus: "0.1"
+          memory: "50M"
       labels:
         - "traefik.enable=true"
         - "traefik.http.routers.puppeteer.rule=PathPrefix(`/`)"
@@ -128,6 +141,31 @@ services:
         - "traefik.http.middlewares.pass-host-header.headers.customRequestHeaders.Host=puppeteer-client"
         - "traefik.http.routers.puppeteer.middlewares=pass-host-header"
 
+  worker:
+    image: worker:latest
+    restart: always
+    build:
+      context: .
+      dockerfile: ./worker/Dockerfile
+    env_file:
+      - .env
+    networks:
+      - proxy
+    depends_on:
+      - redis
+      - browser-service
+    deploy:
+      mode: replicated
+      replicas: 10
+      resources:
+        limits:
+          cpus: "0.2"
+          memory: "100M"
+      restart_policy:
+        condition: on-failure
+    labels:
+      - "traefik.enable=false"
+
   redis:
     image: redis:alpine
     restart: always
@@ -136,6 +174,11 @@ services:
     command: redis-server --save 60 1 --loglevel warning
     labels:
       - "traefik.enable=false"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
 networks:
   proxy:

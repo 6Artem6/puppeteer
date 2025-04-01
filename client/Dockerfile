@@ -17,8 +17,9 @@ RUN npm ci --omit=dev
 RUN npm install -g wscat
 
 # Копируем код
-COPY . .
+COPY ./client ./client
+COPY ./shared ./shared
 
 EXPOSE 4000
 
-CMD ["node", "service.mjs"]
+CMD ["node", "./client/service.mjs"]

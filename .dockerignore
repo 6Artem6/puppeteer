@@ -1,6 +1,5 @@
 node_modules
-browser/node_modules
-client/node_modules
+*/node_modules
 profile
 nginx
 npm-debug.log

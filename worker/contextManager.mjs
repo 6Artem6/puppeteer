@@ -1,15 +1,12 @@
 import puppeteer from "puppeteer-extra";
 import StealthPlugin from "puppeteer-extra-plugin-stealth";
-import { createClient } from "redis";
 import dotenv from "dotenv";
 import { promises as dns } from "dns";
-import { logToFile } from './logger.mjs';
-import { mapsEqual } from './utils.mjs';
-import { encryptAndCompress, decryptAndDecompress } from './cryptoUtils.mjs';
+import { logToFile } from '../shared/logger.mjs';
+import { mapsEqual } from '../shared/utils.mjs';
+import { redisClient } from '../shared/redisClient.mjs';
+import { encryptAndCompress, decryptAndDecompress } from '../shared/cryptoUtils.mjs';
 
-export {
-    createClient
-}
 
 let browser = null; // Переменная для хранения экземпляра браузера Puppeteer
 
@@ -30,33 +27,9 @@ const MAX_CONTEXTS = 5;
 const MAX_REQUEST_COUNT = 10;
 const contextStore = {};
 
-// Создаем глобальный Redis-клиент
-const REDIS_HOST = process.env.REDIS_HOST || 'redis';
-const REDIS_PORT = process.env.REDIS_PORT || 6379;
-const redisClient = createClient({
-    url: `redis://${REDIS_HOST}:${REDIS_PORT}`
-});
 
 puppeteer.use(StealthPlugin()); // Используем плагин Stealth для обхода детектирования ботов
 
-// Немедленно вызываемая асинхронная функция (IIFE) для подключения к Redis
-(async () => {
-    try {
-        // Проверяем, открыт ли клиент Redis
-        if (!redisClient.isOpen) {
-            // Подключаемся к Redis, если соединение отсутствует
-            await redisClient.connect().catch(console.error);
-        }
-        await logToFile("✅ Подключено к Redis");
-    } catch (err) {
-        // Логируем ошибку подключения
-        await logToFile("❌ Ошибка подключения к Redis:", err);
-    }
-})();
-
-// Обработчики событий для Redis
-redisClient.on("connect", async () => await logToFile("✅ Подключено к Redis"));
-redisClient.on("error", async (err) => await logToFile("❌ Ошибка Redis:", err));
 
 /**
  * Запускает экземпляр браузера.
@@ -308,7 +281,7 @@ async function getContext(accountId) {
         try {
             // Закрываем страницы, если они открыты
             for (const page of contextStore[oldestAccountId].pagesMap.values()) {
-                if (page && !page.isClosed()) {
+                if (page && page.isClosed && !page.isClosed()) {
                     await page.close();
                 }
             }
@@ -733,6 +706,6 @@ async function saveUsername(accountId, leadId, username) {
 
 export {
     getContext, saveContext, loadContext, updateContext, clearContext,
-    saveCookies, loadCookies, redisClient, contextStore, launchBrowser,
+    saveCookies, loadCookies, contextStore, launchBrowser,
     getUsername, saveUsername
 };

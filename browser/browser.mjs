@@ -31,6 +31,18 @@ app.use((req, res, next) => {
     next();
 });
 
+
+/**
+ * Проверка состояния сервиса.
+ * @route GET /health
+ * @param {Request} req - Экземпляр запроса.
+ * @param {Response} res - Экземпляр ответа.
+ * @returns {void}
+ */
+app.get('/health', async (req, res) => {
+    res.status(200).send('OK');
+});
+
 // Эндпоинт для получения WebSocket URL
 app.get("/ws-endpoint", async (req, res) => {
     try {
