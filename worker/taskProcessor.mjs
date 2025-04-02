@@ -19,8 +19,15 @@ const MAX_PAGES_PER_ACCOUNT = 5; // Максимальное количеств�
 
 
 export async function processTask(task) {
+    const startTime = Date.now();
     console.log(`🔄 Обрабатываем задачу: ${task.sessionId}`);
-    await sendLeadMessage(task);
+    try {
+        await withRetries(async () => sendLeadMessage(task));
+    } catch (error) {
+        await logToFile(`[ERROR] Ошибка отправки сообщения: ${error.message}`);
+    }
+    const totalTime = Date.now() - startTime;
+    await logToFile(`[DEBUG] Время выполнения: ${totalTime} мс`);
 }
 
 /**

@@ -104,33 +104,6 @@ app.post('/send-lead-message', async (req, res) => {
 
     const workerId = await addTaskToQueue(sessionId, task);
     return res.status(200).json({ status: 'queued', sessionId, workerId });
-    ///////////////////////////////////////////////////////////////////////////////
-
-    if (!getBrowser()) {
-        await logToFile(`Браузер не инициализирован, перезапускаем...`);
-        await launchBrowser(false, account_id);
-    }
-    if (!getBrowser()) {
-        throw new Error("Не удалось инициализировать браузер");
-    }
-
-    var status, message;
-    try {
-        const result = await withPageLock(account_id, lead_id, async () =>
-            withRetries(() => sendLeadMessage({
-                account_id, base_url, access_token, refresh_token, lead_id, message_text, expiry
-            }))
-        );
-        var { status, message } = result;
-    } catch (error) {
-        await logToFile(`[ERROR] Ошибка отправки сообщения: ${error.message}`);
-        var status = 500;
-        var message = { error: "Failed to send message after retries" };
-    }
-
-    const totalTime = Date.now() - startTime;
-    await logToFile(`[DEBUG] Время выполнения: ${totalTime} мс`);
-    return res.status(status).json(message);
 });
 
 /**

@@ -1,11 +1,11 @@
 FROM node:18-slim
 
-RUN apt-get update && apt-get install -y netcat-traditional
-
 WORKDIR /app
 
 COPY package.json package-lock.json .
 RUN npm ci --omit=dev
+RUN npm install -g wscat
+RUN apt-get update && apt-get install -y netcat-traditional
 
 # Копируем код
 COPY ./worker ./worker

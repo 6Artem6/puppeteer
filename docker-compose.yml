@@ -54,17 +54,18 @@ services:
     environment:
       - EXPRESS_PORT=3000
       - DEBUG_PORT=9222
-      - PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
-    networks:
-      - proxy
-    depends_on:
-      - redis
+      - PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
     env_file:
       - .env
+    networks:
+      - proxy
     volumes:
+      - /root/puppeteer/node_modules:/app/node_modules:delegated
       - ./browser/supervisord.conf:/etc/supervisor/conf.d/supervisord.conf
+    depends_on:
+      - redis
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"] # Измени путь под свой сервис
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
       interval: 10s
       retries: 5
       timeout: 5s
@@ -118,6 +119,8 @@ services:
       - .env
     networks:
       - proxy
+    volumes:
+      - /root/puppeteer/node_modules:/app/node_modules:delegated
     depends_on:
       - redis
     deploy:
@@ -151,6 +154,8 @@ services:
       - .env
     networks:
       - proxy
+    volumes:
+      - /root/puppeteer/node_modules:/app/node_modules:delegated
     depends_on:
       - redis
       - browser-service

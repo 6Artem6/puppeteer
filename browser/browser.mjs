@@ -15,9 +15,15 @@ const DEBUG_PORT = process.env.DEBUG_PORT || 9222;
 
 // Middleware для обработки X-Session-ID
 app.use((req, res, next) => {
+    if (req.originalUrl === "/health") {
+        return next();
+    }
+
+    // Получаем session ID из заголовков или cookies
     let sessionId = req.get("X-Session-ID") || req.cookies["X-Session-ID"];
 
     if (!sessionId) {
+        // Если сессия не найдена, генерируем новый ID
         sessionId = crypto.randomBytes(16).toString("hex");
         res.cookie("X-Session-ID", sessionId, {
             httpOnly: true,
@@ -25,7 +31,11 @@ app.use((req, res, next) => {
         });
     }
 
+    // Логируем сессионный ID, URL и параметры запроса
     console.log(`🔄 Using session ID: ${sessionId}`);
+    console.log(`🔗 URL: ${req.originalUrl}`);
+    console.log(`🔑 Query parameters: ${JSON.stringify(req.query)}`);
+
     req.sessionID = sessionId;
     res.set("X-Session-ID", sessionId);
     next();
@@ -61,7 +71,7 @@ app.get("/ws-endpoint", async (req, res) => {
         res.setHeader("X-Session-ID", req.sessionID);
 
         // Корректируем WebSocket URL
-        let wsUrl = data.webSocketDebuggerUrl.replace(/ws:\/\/[^/]+/, `ws://browser-service:${DEBUG_PORT}`);
+        let wsUrl = data.webSocketDebuggerUrl.replace(/ws:\/\/[^/]+/, `ws://${process.env.BROWSER_HOST}:${DEBUG_PORT}`);
 
         console.log(`✅ Отправляем клиенту ws-endpoint: ${wsUrl}`);
         res.send(wsUrl);
